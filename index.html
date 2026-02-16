@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理学実験室</title>
+    <style>
+        /* CSS: 見た目を整える「服」の役割 */
+        body {
+            /* 背景を薄いグレーに */
+            background-color: #f0f0f0;
+            /* 画面中央に配置するための設定 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+        }
+
+        h1 {
+            /* 大きな文字 */
+            font-size: 3rem;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        button {
+            /* 青いボタン */
+            background-color: #007bff;
+            color: white;
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px; /* 角を少し丸く */
+            cursor: pointer;
+            transition: background-color 0.3s; /* マウスを乗せたときのアニメーション */
+        }
+
+        button:hover {
+            /* マウスが乗ったときに少し濃くする */
+            background-color: #0056b3;
+        }
+
+        /* メッセージ表示用のスタイルを追加 */
+        #message {
+            font-size: 2rem;
+            color: #e74c3c; /* 目立つ赤色に */
+            margin-top: 20px;
+            font-weight: bold;
+            min-height: 2rem; /* 文字がない時も場所を確保 */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HTML: 構造を作る「骨」の役割 -->
+    <h1>心理学実験室へようこそ</h1>
+    
+    <button onclick="sayHello()">実験を開始する</button>
+
+    <!-- ここにメッセージを表示する箱（空っぽ）を用意します -->
+    <p id="message"></p>
+
+    <script>
+        // JavaScript: 動きをつける「筋肉」の役割
+        function sayHello() {
+            // alert("Hello World!"); // プレビュー画面ではブロックされることがあるので変更！
+            
+            // 代わりに、画面内の 'message' という箱に文字を入れます
+            document.getElementById("message").textContent = "Hello World!";
+        }
+    </script>
+
+</body>
+</html>
