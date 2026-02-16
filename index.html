@@ -3,75 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>心理学実験室</title>
+    <title>心理学実験室へようこそ</title>
     <style>
-        /* CSS: 見た目を整える「服」の役割 */
+        /* ベースのスタイル */
+        :root {
+            --bg-color: #f3f4f6; /* 薄いグレー */
+            --text-color: #1f2937;
+            --primary-color: #2563eb; /* 鮮やかな青 */
+            --primary-hover: #1d4ed8;
+            --white: #ffffff;
+        }
+
         body {
-            /* 背景を薄いグレーに */
-            background-color: #f0f0f0;
-            /* 画面中央に配置するための設定 */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg-color);
             margin: 0;
-            font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* 画面いっぱいの高さ */
+            color: var(--text-color);
         }
 
+        /* コンテナのデザイン */
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        /* 見出しのデザイン */
         h1 {
-            /* 大きな文字 */
-            font-size: 3rem;
-            color: #333;
-            margin-bottom: 30px;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #374151;
         }
 
-        button {
-            /* 青いボタン */
-            background-color: #007bff;
-            color: white;
-            font-size: 1.5rem;
-            padding: 15px 30px;
+        /* ボタンのデザイン */
+        .btn {
+            background-color: var(--primary-color);
+            color: var(--white);
+            font-size: 1.25rem;
+            padding: 1rem 3rem;
             border: none;
-            border-radius: 8px; /* 角を少し丸く */
+            border-radius: 50px; /* 丸みのあるデザイン */
             cursor: pointer;
-            transition: background-color 0.3s; /* マウスを乗せたときのアニメーション */
-        }
-
-        button:hover {
-            /* マウスが乗ったときに少し濃くする */
-            background-color: #0056b3;
-        }
-
-        /* メッセージ表示用のスタイルを追加 */
-        #message {
-            font-size: 2rem;
-            color: #e74c3c; /* 目立つ赤色に */
-            margin-top: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
             font-weight: bold;
-            min-height: 2rem; /* 文字がない時も場所を確保 */
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* カスタムアラート（モーダル）のスタイル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            width: 80%;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-message {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+
+        .modal-btn {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .modal-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            .btn {
+                width: 100%;
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- HTML: 構造を作る「骨」の役割 -->
-    <h1>心理学実験室へようこそ</h1>
-    
-    <button onclick="sayHello()">実験を開始する</button>
+    <div class="container">
+        <h1>心理学実験室へようこそ</h1>
+        <button id="startExperimentBtn" class="btn">実験を開始する</button>
+    </div>
 
-    <!-- ここにメッセージを表示する箱（空っぽ）を用意します -->
-    <p id="message"></p>
+    <!-- カスタムアラート用モーダル -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-content">
+            <p class="modal-message">Hello World!</p>
+            <button id="closeModalBtn" class="modal-btn">閉じる</button>
+        </div>
+    </div>
 
     <script>
-        // JavaScript: 動きをつける「筋肉」の役割
-        function sayHello() {
-            // alert("Hello World!"); // プレビュー画面ではブロックされることがあるので変更！
-            
-            // 代わりに、画面内の 'message' という箱に文字を入れます
-            document.getElementById("message").textContent = "Hello World!";
-        }
-    </script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('startExperimentBtn');
+            const modal = document.getElementById('customModal');
+            const closeBtn = document.getElementById('closeModalBtn');
 
+            // 実験開始ボタンをクリックした時の処理
+            startBtn.addEventListener('click', () => {
+                // 通常のalert('Hello World!')の代わりにモーダルを表示
+                modal.classList.add('active');
+            });
+
+            // 閉じるボタンをクリックした時の処理
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+
+            // モーダルの背景をクリックしても閉じるようにする
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
