@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>jsPsych Circle Display</title>
+  <!-- Load jsPsych from CDN -->
+  <script src="https://unpkg.com/jspsych@7.3.4"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
+  <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+  <style>
+    /* Style to draw a circle using CSS */
+    .circle {
+      height: 150px;
+      width: 150px;
+      background-color: #ff5722; /* Circle color */
+      border-radius: 50%;        /* Makes it a circle */
+      display: inline-block;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="jspsych-target"></div>
+</body>
+<script>
+  /**
+   * jsPsych Circle Display Experiment
+   * This script initializes jsPsych and displays a circle on the screen.
+   */
+
+  // 1. Initialize jsPsych
+  const jsPsych = initJsPsych({
+    on_finish: function() {
+      // Show data in the console when finished
+      jsPsych.data.displayData();
+    }
+  });
+
+  // 2. Create timeline
+  const timeline = [];
+
+  // 3. Welcome message
+  const welcome = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: "何かキーを押すと円が表示されます。",
+  };
+  timeline.push(welcome);
+
+  // 4. Circle display trial
+  // We use a div with the 'circle' class defined in the CSS above.
+  const circle_trial = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+      <div class="container">
+        <div class="circle"></div>
+        <p style="margin-top: 20px;">スペースキーを押して終了してください。</p>
+      </div>
+    `,
+    choices: [' '], // Only respond to spacebar
+    data: {
+      test_part: 'circle_display'
+    }
+  };
+  timeline.push(circle_trial);
+
+  // 5. Run the experiment
+  jsPsych.run(timeline);
+</script>
+</html>
