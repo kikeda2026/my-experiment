@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müller-Lyer Illusion Experiment</title>
+    <!-- jsPsych 7.3 libs -->
+    <script src="https://unpkg.com/jspsych@7.3.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <!-- Chart.js for results visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+        .jspsych-display-element {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+        }
+        .instruction-box {
+            max-width: 600px;
+            text-align: left;
+            line-height: 1.6;
+        }
+        .trial-counter {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .controls-guide {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        canvas {
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #status-message {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+            width: 100%;
+            max-width: 800px;
+        }
+        .results-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 700px;
+            margin-top: 20px;
+        }
+        .btn-view-results {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn-view-results:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="jspsych-target"></div>
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyoNOWNEAS7Rc4asvT9a05IAlgOR_biBZ9W2HpDCkZbGSKHEJ6G9xSh49QLOUF1J90_/exec';
+
+        const jsPsych = initJsPsych({
+            on_finish: function() {
+                // Final cleanup if needed
+            }
+        });
+
+        // 固定設定
+        const STIM_WIDTH = 600;
+        const STIM_HEIGHT = 400;
+        const STANDARD_LENGTH = 200;
+        const LINE_Y_TOP = 100;
+        const LINE_Y_BOTTOM = 300;
+
+        // 実験条件
+        const angles = [15, 75];
+        const wing_lengths = [20, 50];
+        
+        let timeline = [];
+
+        // 1. 参加者ID入力画面
+        timeline.push({
+            type: jsPsychSurveyText,
+            questions: [
+                {prompt: "参加者IDを入力してください", name: 'subject_id', required: true}
+            ],
+            button_label: '次へ'
+        });
+
+        // 2. 教示画面
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `
+                <div class="instruction-box">
+                    <h2>ミュラー・リヤー錯視実験</h2>
+                    <p>この実験では、2つの線の長さを比較します。</p>
+                    <p><strong>上側の線：</strong> 長さが固定された標準刺激です。</p>
+                    <p><strong>下側の線：</strong> 長さを調整できる比較刺激です。</p>
+                    <br>
+                    <p>左右の矢印キー（← →）を使って、下側の線が上側の線と<strong>「同じ長さ」</strong>に見えるように調整してください。押し続けるとスムーズに変化します。</p>
+                    <p>調整が終わったら、<strong>スペースキー</strong>を押して確定してください。</p>
+                    <p style="text-align:center;">[ 任意のキーを押して開始 ]</p>
+                </div>
+            `
+        });
+
+        // 試行生成
+        const base_trials = [];
+        angles.forEach(angle => {
+            wing_lengths.forEach(wing_len => {
+                base_trials.push({ angle: angle, wing_len: wing_len });
+            });
+        });
+
+        // 3ブロック（合計12試行）
+        let full_design = jsPsych.randomization.repeat(base_trials, 3);
+
+        full_design.forEach((config, index) => {
+            let current_comparison_length = Math.floor(Math.random() * 200) + 100;
+            let animation_id = null;
+            let is_key_down = false;
+            let current_direction = 0;
+
+            const trial = {
+                type: jsPsychCanvasKeyboardResponse,
+                canvas_size: [STIM_HEIGHT, STIM_WIDTH],
+                choices: [' '],
+                data: {
+                    task: 'response',
+                    angle: config.angle,
+                    wing_len: config.wing_len,
+                    standard_length: STANDARD_LENGTH,
+                    trial_index: index + 1
+                },
+                stimulus: function(canvas) {
+                    drawStimuli(canvas, current_comparison_length, config.angle, config.wing_len);
+                },
+                prompt: function() {
+                    return `
+                        <div class="trial-counter">Trial ${index + 1} / 12</div>
+                        <div class="controls-guide">
+                            ← 長さを短く / 長くする →<br>
+                            [ スペースキー ] で確定
+                        </div>
+                    `;
+                },
+                on_load: function() {
+                    const canvas = document.querySelector('canvas');
+                    const step = 2.5; // 移動速度
+
+                    const updateLoop = () => {
+                        if (current_direction !== 0) {
+                            current_comparison_length += current_direction * step;
+                            drawStimuli(canvas, current_comparison_length, config.angle, config.wing_len);
+                            animation_id = requestAnimationFrame(updateLoop);
+                        }
+                    };
+
+                    const handleKeyDown = (e) => {
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                            const new_direction = (e.key === 'ArrowLeft') ? -1 : 1;
+                            if (!is_key_down || current_direction !== new_direction) {
+                                is_key_down = true;
+                                current_direction = new_direction;
+                                cancelAnimationFrame(animation_id);
+                                animation_id = requestAnimationFrame(updateLoop);
+                            }
+                        }
+                    };
+
+                    const handleKeyUp = (e) => {
+                        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                            is_key_down = false;
+                            current_direction = 0;
+                            cancelAnimationFrame(animation_id);
+                        }
+                    };
+
+                    window.addEventListener('keydown', handleKeyDown);
+                    window.addEventListener('keyup', handleKeyUp);
+
+                    jsPsych.getCurrentTrial().on_finish_callback = () => {
+                        window.removeEventListener('keydown', handleKeyDown);
+                        window.removeEventListener('keyup', handleKeyUp);
+                        cancelAnimationFrame(animation_id);
+                        is_key_down = false;
+                        current_direction = 0;
+                    };
+                },
+                on_finish: function(data) {
+                    data.pse = current_comparison_length;
+                    data.error_amount = current_comparison_length - STANDARD_LENGTH;
+                    data.timestamp = new Date().toISOString();
+                    const id_data = jsPsych.data.get().filter({trial_type: 'survey-text'}).last().values()[0];
+                    data.subject_id = id_data.response.subject_id;
+                }
+            };
+            timeline.push(trial);
+        });
+
+        // 3. 送信および結果表示画面
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div id="status-message">データを送信中...</div><div id="graph-area"></div>',
+            choices: "NO_KEYS",
+            on_load: function() {
+                const results_data = jsPsych.data.get().filter({task: 'response'}).values();
+                const upload_payload = results_data.map(d => ({
+                    subject_id: d.subject_id,
+                    timestamp: d.timestamp,
+                    angle: d.angle,
+                    wing_length: d.wing_len,
+                    standard_len: d.standard_length,
+                    pse: d.pse,
+                    error_amount: d.error_amount
+                }));
+
+                // データの送信
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(upload_payload)
+                })
+                .then(() => {
+                    const status = document.getElementById('status-message');
+                    status.innerHTML = `
+                        <h2>実験終了</h2>
+                        <p>データは正常に送信されました。お疲れ様でした。</p>
+                        <button class="btn-view-results" id="show-graph-btn">自分の結果をグラフで見る</button>
+                    `;
+                    
+                    document.getElementById('show-graph-btn').addEventListener('click', () => {
+                        showResultsGraph(results_data);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    document.getElementById('status-message').innerHTML = '送信に失敗しましたが、結果は以下から確認できます。';
+                    showResultsGraph(results_data);
+                });
+            }
+        });
+
+        function showResultsGraph(data) {
+            const graphArea = document.getElementById('graph-area');
+            graphArea.innerHTML = `
+                <div class="results-container">
+                    <h3>実験結果：条件別 錯覚量の平均</h3>
+                    <canvas id="resultsChart" width="400" height="300"></canvas>
+                    <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+                        ※錯覚量(Error Amount) = 調整した長さ - 200px<br>
+                        角度が小さく、羽が長いほど錯覚が強くなる傾向があります。
+                    </p>
+                </div>
+            `;
+
+            // 集計処理 (2x2 conditions)
+            const conditions = [
+                { angle: 15, wing_len: 20 },
+                { angle: 15, wing_len: 50 },
+                { angle: 75, wing_len: 20 },
+                { angle: 75, wing_len: 50 }
+            ];
+
+            const means = conditions.map(cond => {
+                const subset = data.filter(d => d.angle === cond.angle && d.wing_len === cond.wing_len);
+                const sum = subset.reduce((acc, curr) => acc + curr.error_amount, 0);
+                return subset.length > 0 ? sum / subset.length : 0;
+            });
+
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        '角度15°/羽20px', 
+                        '角度15°/羽50px', 
+                        '角度75°/羽20px', 
+                        '角度75°/羽50px'
+                    ],
+                    datasets: [{
+                        label: '錯覚量の平均値 (px)',
+                        data: means,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(255, 99, 132, 0.9)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(54, 162, 235, 0.9)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(54, 162, 235, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '錯覚量 (px)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function drawStimuli(canvas, comp_len, angle, wing_len) {
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+
+            // 1. 標準刺激（上：内向き羽）
+            drawMullerLyer(ctx, STIM_WIDTH/2, LINE_Y_TOP, STANDARD_LENGTH, angle, wing_len, true);
+
+            // 2. 比較刺激（下：外向き羽）
+            drawMullerLyer(ctx, STIM_WIDTH/2, LINE_Y_BOTTOM, comp_len, angle, wing_len, false);
+        }
+
+        function drawMullerLyer(ctx, cx, cy, length, angleDegree, wingLen, isInward) {
+            const x_start = cx - length / 2;
+            const x_end = cx + length / 2;
+            const angleRad = (angleDegree * Math.PI) / 180;
+
+            ctx.beginPath();
+            ctx.moveTo(x_start, cy);
+            ctx.lineTo(x_end, cy);
+            ctx.stroke();
+
+            const drawWings = (x, direction) => {
+                const factor = isInward ? -direction : direction;
+                
+                // 上側の羽
+                ctx.beginPath();
+                ctx.moveTo(x, cy);
+                ctx.lineTo(x + factor * wingLen * Math.cos(angleRad), cy - wingLen * Math.sin(angleRad));
+                ctx.stroke();
+
+                // 下側の羽
+                ctx.beginPath();
+                ctx.moveTo(x, cy);
+                ctx.lineTo(x + factor * wingLen * Math.cos(angleRad), cy + wingLen * Math.sin(angleRad));
+                ctx.stroke();
+            };
+
+            drawWings(x_start, -1);
+            drawWings(x_end, 1);
+        }
+
+        jsPsych.run(timeline);
+    </script>
+</body>
+</html>
