@@ -10,6 +10,7 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.2"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.2"></script>
     <!-- Chart.js for Feedback -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://unpkg.com/jspsych@7.3.1/css/jspsych.css" rel="stylesheet" type="text/css" />
@@ -98,6 +99,15 @@
             max-width: 550px;
             margin: 20px auto;
         }
+
+        /* 最終画面用の専用コンテナ */
+        .final-screen-container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -157,6 +167,21 @@
             button_label: '次へ'
         };
 
+        // 1-2. 使用機材の選択試行
+        const device_selection_trial = {
+            type: jsPsychSurveyMultiChoice,
+            questions: [
+                {
+                    prompt: "現在、実験に使用している機材を選択してください", 
+                    name: 'device', 
+                    options: ["パソコン", "スマホ", "タブレット"], 
+                    required: true,
+                    horizontal: true
+                }
+            ],
+            button_label: '次へ'
+        };
+
         // 刺激条件の作成
         const angles = [15, 75];
         const wingLengths = [20, 50];
@@ -172,7 +197,7 @@
         }
         trialParams = jsPsych.randomization.shuffle(trialParams);
 
-        // 2. 教示画面 (スマホ対応のためボタン入力形式に修正)
+        // 2. 教示画面
         const instructions = {
             type: jsPsychHtmlButtonResponse,
             stimulus: `
@@ -226,9 +251,11 @@
                     });
                 },
                 on_finish: function(data) {
-                    // データ構造の定義
                     const subject_id = jsPsych.data.get().filter({trial_type: 'survey-text'}).last(1).values()[0].response.subject_id;
+                    const device = jsPsych.data.get().filter({trial_type: 'survey-multi-choice'}).last(1).values()[0].response.device;
+                    
                     data.subject_id = subject_id;
+                    data.device = device;
                     data.timestamp = new Date().toISOString();
                     data.angle = param.angle;
                     data.wing_length = param.wingLength;
@@ -241,6 +268,7 @@
         // 4. データ送信関数
         function sendDataToGAS() {
             const display_element = jsPsych.getDisplayElement();
+            // 送信中のローディング画面表示（jsPsychのラッパーをそのまま使用）
             display_element.innerHTML = `
                 <div class="jspsych-content-wrapper">
                     <h2>データ送信中...</h2>
@@ -252,6 +280,7 @@
             const results = jsPsych.data.get().filter({trial_type: 'canvas-slider-response'}).values();
             const dataToSave = results.map(d => ({
                 subject_id: d.subject_id,
+                device: d.device,
                 timestamp: d.timestamp,
                 angle: d.angle,
                 wing_length: d.wing_length,
@@ -277,82 +306,86 @@
         function showFinalScreen(title, message) {
             const display_element = jsPsych.getDisplayElement();
             
-            // データの集計
+            // データの抽出
             const results = jsPsych.data.get().filter({trial_type: 'canvas-slider-response'}).values();
-            
-            // 2x2条件の平均値を算出
             const conditions = [
                 { angle: 15, wing: 20 },
                 { angle: 15, wing: 50 },
                 { angle: 75, wing: 20 },
                 { angle: 75, wing: 50 }
             ];
-
             const means = conditions.map(c => {
                 const trials = results.filter(r => r.angle === c.angle && r.wing_length === c.wing);
                 const sum = trials.reduce((acc, curr) => acc + curr.error_amount, 0);
                 return trials.length > 0 ? (sum / trials.length).toFixed(2) : 0;
             });
-
             const labels = conditions.map(c => `${c.angle}° / ${c.wing}px`);
 
+            // 【重要：修正箇所】
+            // 背景が二重になるエラーを解消するため、内側に新しい jspsych-content-wrapper を作らず、
+            // display_element 直下に「一つだけ」のラッパー構造が維持されるように書き換えます。
             display_element.innerHTML = `
                 <div class="jspsych-content-wrapper" style="max-width: 800px;">
-                    <h2 style="margin-bottom: 10px;">${title}</h2>
-                    <p>${message}</p>
-                    
-                    <div class="chart-container">
-                        <canvas id="feedbackChart"></canvas>
-                    </div>
+                    <div class="final-screen-container">
+                        <h2 style="margin-bottom: 10px;">${title}</h2>
+                        <p>${message}</p>
+                        
+                        <div class="chart-container">
+                            <canvas id="feedbackChart"></canvas>
+                        </div>
 
-                    <div style="text-align: left; font-size: 0.9rem; color: #4a5568; margin-top: 10px;">
-                        <p><strong>解説:</strong> 縦軸は錯覚量（Error Amount）です。正の数値が大きいほど、比較刺激を実際よりも短く感じ、長く調整したことを意味します。</p>
-                        <p>一般に、羽の角度が鋭いほど（15°）、また羽が長いほど（50px）、錯覚量は大きくなることが知られています。</p>
+                        <div style="text-align: left; font-size: 0.9rem; color: #4a5568; margin-top: 10px; width: 100%;">
+                            <p><strong>解説:</strong> 縦軸は錯覚量（Error Amount）です。正の数値が大きいほど、比較刺激を実際よりも短く感じ、長く調整したことを意味します。</p>
+                            <p>一般に、羽の角度が鋭いほど（15°）、また羽が長いほど（50px）、錯覚量は大きくなることが知られています。</p>
+                        </div>
+                        
+                        <p style="color: #718096; margin-top: 20px;">ブラウザを閉じて終了してください。</p>
                     </div>
-                    
-                    <p style="color: #718096; margin-top: 20px;">ブラウザを閉じて終了してください。</p>
                 </div>
             `;
 
             // Chart.jsによる描画
-            const ctx = document.getElementById('feedbackChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '平均錯覚量 (px)',
-                        data: means,
-                        backgroundColor: [
-                            'rgba(74, 144, 226, 0.7)',
-                            'rgba(74, 144, 226, 0.9)',
-                            'rgba(160, 174, 192, 0.7)',
-                            'rgba(160, 174, 192, 0.9)'
-                        ],
-                        borderColor: '#2d3748',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: '錯覚量 (px)' }
-                        },
-                        x: {
-                            title: { display: true, text: '条件 (角度 / 羽の長さ)' }
-                        }
+            const canvasElement = document.getElementById('feedbackChart');
+            if (canvasElement) {
+                const ctx = canvasElement.getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '平均錯覚量 (px)',
+                            data: means,
+                            backgroundColor: [
+                                'rgba(74, 144, 226, 0.7)',
+                                'rgba(74, 144, 226, 0.9)',
+                                'rgba(160, 174, 192, 0.7)',
+                                'rgba(160, 174, 192, 0.9)'
+                            ],
+                            borderColor: '#2d3748',
+                            borderWidth: 1
+                        }]
                     },
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: '条件別平均錯覚量' }
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: '錯覚量 (px)' }
+                            },
+                            x: {
+                                title: { display: true, text: '条件 (角度 / 羽の長さ)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: '条件別平均錯覚量' }
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
-        const timeline = [participant_id_trial, instructions, ...trials];
+        const timeline = [participant_id_trial, device_selection_trial, instructions, ...trials];
         jsPsych.run(timeline);
 
     </script>
