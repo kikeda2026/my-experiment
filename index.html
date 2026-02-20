@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理学実験室 ポータルサイト</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #e0f2f1; /* 柔らかいミントグリーン */
+            --accent-color: #4db6ac;  /* 落ち着いたアクセントカラー */
+            --text-color: #37474f;
+            --bg-color: #f5f7f7;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.8;
+            padding-bottom: 4rem;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 4rem 1rem;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .intro {
+            background-color: var(--primary-color);
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 3rem;
+            text-align: center;
+            font-weight: 400;
+        }
+
+        .experiment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .card h2 {
+            font-size: 1.4rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            color: #546e7a;
+        }
+
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: 700;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px rgba(77, 182, 172, 0.3);
+        }
+
+        .btn:hover {
+            background-color: #26a69a;
+            box-shadow: 0 6px 12px rgba(77, 182, 172, 0.4);
+            transform: scale(1.02);
+        }
+
+        footer {
+            margin-top: 5rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #90a4ae;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            header {
+                padding: 3rem 1rem;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            .intro {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1>池田研究室（IKEDA's Lab.）</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <p>ご訪問ありがとうございます。以下の実験へのご協力をお願いいたします。<br>
+            各実験は数分で終わります。スマートフォンからも参加可能です。</p>
+        </section>
+
+        <div class="experiment-grid">
+            <!-- 実験0 -->
+            <article class="card">
+                <div>
+                    <h2>実験0：はじめてのWebページ</h2>
+                    <p>私が作成した記念すべき最初の実験プログラムです。</p>
+                </div>
+                <a href="hello_world.html" class="btn">Hello Worldを見る</a>
+            </article>
+
+            <!-- 実験1 -->
+            <article class="card">
+                <div>
+                    <h2>実験1：ストループ課題</h2>
+                    <p>「文字の意味」と「文字の色」の干渉を調べる、簡単なキーボード入力のテストです。（所要時間：約3分）</p>
+                </div>
+                <a href="stroop.html" class="btn">実験1に参加する</a>
+            </article>
+
+            <!-- 実験2 -->
+            <article class="card">
+                <div>
+                    <h2>実験2：ミュラー・リヤー錯視</h2>
+                    <p>図形の長さが違って見える錯覚を測る、スライダーを使った視覚のテストです。（所要時間：約2分）</p>
+                </div>
+                <a href="muller_lyer_final.html" class="btn">実験2に参加する</a>
+            </article>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 IKEDA's Lab. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
