@@ -20,7 +20,7 @@
             background-color: #f0f2f5;
             margin: 0;
             padding: 0;
-            overflow-x: hidden; /* 横スクロール防止 */
+            overflow-x: hidden;
         }
 
         /* jsPsychの表示エリア全体を画面中央に固定 */
@@ -35,19 +35,20 @@
             box-sizing: border-box;
         }
 
-        /* 白いカード部分のデザインを修正：レスポンシブ対応 */
+        /* コンテナのレスポンシブ対応と中央寄せの強化 */
         .jspsych-content-wrapper {
             background: white;
-            padding: 20px; /* モバイル向けにパディングを縮小 */
+            padding: 20px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
-            width: 95%; /* 画面幅に合わせる */
+            width: 95%;
             max-width: 700px;
             margin: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             box-sizing: border-box;
         }
 
@@ -55,6 +56,10 @@
         .jspsych-content {
             max-width: 100% !important;
             width: 100% !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         /* 試行カウンターのスタイル */
@@ -64,27 +69,31 @@
             color: #4a5568;
             margin-bottom: 15px;
             font-family: sans-serif;
+            text-align: center;
         }
 
-        /* キャンバスのスタイル：レスポンシブ調整 */
+        /* キャンバス：ブロック要素化と自動マージンで中央配置を確定 */
         canvas {
             border: 2px solid #e2e8f0;
             background-color: #ffffff;
             border-radius: 8px;
-            margin: 10px 0;
-            max-width: 100%; /* 親要素を超えない */
-            height: auto !important; /* アスペクト比を維持 */
-            display: block;
+            margin: 10px auto !important; /* 左右オートで中央寄せ */
+            display: block !important;    /* インライン要素からの脱却 */
+            max-width: 100%; 
+            height: auto !important;
+            box-sizing: border-box;
         }
 
-        /* スライダーコンテナの調整 */
+        /* スライダーコンテナ */
         .jspsych-canvas-slider-response-container {
             width: 100% !important;
             max-width: 500px;
-            margin: 20px auto;
+            margin: 20px auto !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* スライダー自体の幅を100%に */
         input[type="range"] {
             width: 100% !important;
         }
@@ -98,21 +107,20 @@
             border-radius: 8px !important;
             transition: background-color 0.2s;
             color: white !important;
-            margin: 10px 0;
+            margin: 15px auto !important;
+            display: inline-block;
         }
 
         .jspsych-btn:hover {
             background-color: #357abd !important;
         }
 
-        /* フィードバックグラフのコンテナ */
         .chart-container {
             width: 100%;
             max-width: 550px;
             margin: 20px auto;
         }
 
-        /* 最終画面用の専用コンテナ */
         .final-screen-container {
             text-align: center;
             display: flex;
@@ -142,7 +150,7 @@
             }
         });
 
-        // 定数設定
+        // 定数設定 (変更不可)
         const STANDARD_LENGTH = 200;
         const SLIDER_MIN = 50;
         const SLIDER_MAX = 350;
@@ -280,8 +288,8 @@
                     data.timestamp = new Date().toISOString();
                     data.angle = param.angle;
                     data.wing_length = param.wingLength;
-                    data.pse = parseInt(data.response); // 主観的等価点
-                    data.error_amount = data.pse - STANDARD_LENGTH; // 誤差量
+                    data.pse = parseInt(data.response);
+                    data.error_amount = data.pse - STANDARD_LENGTH;
                 }
             };
         });
