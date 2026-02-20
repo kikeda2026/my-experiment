@@ -119,6 +119,9 @@
             width: 100%;
             max-width: 550px;
             margin: 20px auto;
+            position: relative;
+            /* 小さな画面でもグラフが潰れないように最小高さを確保 */
+            min-height: 300px; 
         }
 
         .final-screen-container {
@@ -135,6 +138,9 @@
             }
             h2 {
                 font-size: 1.25rem;
+            }
+            .chart-container {
+                min-height: 250px;
             }
         }
     </style>
@@ -348,11 +354,11 @@
                 <div class="jspsych-content-wrapper" style="max-width: 800px; margin: auto;">
                     <div class="final-screen-container">
                         <h2 style="margin-bottom: 10px;">${title}</h2>
-                        <p>${message}</p>
+                        <p style="margin-bottom: 20px;">${message}</p>
                         <div class="chart-container">
                             <canvas id="feedbackChart"></canvas>
                         </div>
-                        <div style="text-align: left; font-size: 0.85rem; color: #4a5568; margin-top: 10px; width: 100%;">
+                        <div style="text-align: left; font-size: 0.85rem; color: #4a5568; margin-top: 15px; width: 100%;">
                             <p><strong>解説:</strong> 縦軸は錯覚量です。正の数値が大きいほど、比較刺激を短く感じ、長く調整したことを意味します。</p>
                         </div>
                         <p style="color: #718096; margin-top: 20px;">ブラウザを閉じて終了してください。</p>
@@ -370,6 +376,10 @@
             const canvasElement = document.getElementById('feedbackChart');
             if (canvasElement) {
                 const ctx = canvasElement.getContext('2d');
+                // スマホでも見やすいようにフォントサイズを動的に調整
+                const isMobile = window.innerWidth < 600;
+                const fontSize = isMobile ? 10 : 12;
+
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -384,8 +394,20 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false, // コンテナのmin-heightに合わせる
                         scales: {
-                            y: { beginAtZero: true }
+                            y: { 
+                                beginAtZero: true,
+                                ticks: { font: { size: fontSize } }
+                            },
+                            x: {
+                                ticks: { font: { size: fontSize } }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { font: { size: fontSize } }
+                            }
                         }
                     }
                 });
