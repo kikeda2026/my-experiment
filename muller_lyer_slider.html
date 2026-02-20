@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Müller-Lyer Illusion Experiment</title>
     <!-- jsPsych 7.3 libs -->
     <script src="https://unpkg.com/jspsych@7.3.1"></script>
@@ -20,6 +20,7 @@
             background-color: #f0f2f5;
             margin: 0;
             padding: 0;
+            overflow-x: hidden; /* 横スクロール防止 */
         }
 
         /* jsPsychの表示エリア全体を画面中央に固定 */
@@ -30,46 +31,62 @@
             justify-content: center;
             min-height: 100vh;
             width: 100vw;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
-        /* 白いカード部分のデザインを修正 */
+        /* 白いカード部分のデザインを修正：レスポンシブ対応 */
         .jspsych-content-wrapper {
             background: white;
-            padding: 40px;
+            padding: 20px; /* モバイル向けにパディングを縮小 */
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
-            /* 幅を固定し、左右のマージンをオートにすることで中央寄せを保証 */
-            width: 100%;
+            width: 95%; /* 画面幅に合わせる */
             max-width: 700px;
             margin: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* jsPsych標準のコンテント幅制限を解除 */
+        .jspsych-content {
+            max-width: 100% !important;
+            width: 100% !important;
         }
 
         /* 試行カウンターのスタイル */
         .trial-counter {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: #4a5568;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-family: sans-serif;
         }
 
-        /* キャンバスのスタイル */
+        /* キャンバスのスタイル：レスポンシブ調整 */
         canvas {
             border: 2px solid #e2e8f0;
             background-color: #ffffff;
             border-radius: 8px;
             margin: 10px 0;
+            max-width: 100%; /* 親要素を超えない */
+            height: auto !important; /* アスペクト比を維持 */
+            display: block;
         }
 
         /* スライダーコンテナの調整 */
         .jspsych-canvas-slider-response-container {
-            width: 100%;
+            width: 100% !important;
             max-width: 500px;
             margin: 20px auto;
+        }
+
+        /* スライダー自体の幅を100%に */
+        input[type="range"] {
+            width: 100% !important;
         }
 
         /* ボタンのスタイル */
@@ -81,16 +98,11 @@
             border-radius: 8px !important;
             transition: background-color 0.2s;
             color: white !important;
+            margin: 10px 0;
         }
 
         .jspsych-btn:hover {
             background-color: #357abd !important;
-        }
-
-        /* 送信メッセージ用 */
-        .status-msg {
-            margin-top: 20px;
-            font-weight: bold;
         }
 
         /* フィードバックグラフのコンテナ */
@@ -107,6 +119,15 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            .jspsych-content-wrapper {
+                padding: 15px;
+            }
+            h2 {
+                font-size: 1.25rem;
+            }
         }
     </style>
 </head>
@@ -268,7 +289,6 @@
         // 4. データ送信関数
         function sendDataToGAS() {
             const display_element = jsPsych.getDisplayElement();
-            // 送信中のローディング画面表示（jsPsychのラッパーをそのまま使用）
             display_element.innerHTML = `
                 <div class="jspsych-content-wrapper">
                     <h2>データ送信中...</h2>
@@ -298,21 +318,16 @@
                 showFinalScreen("実験結果のフィードバック", "データの保存が完了しました。あなたの結果は以下の通りです。");
             })
             .catch((error) => {
-                showFinalScreen("送信失敗（結果表示のみ）", "データの保存中にエラーが発生しましたが、結果は表示可能です。: " + error.message);
+                showFinalScreen("送信失敗", "データの保存中にエラーが発生しました。: " + error.message);
             });
         }
 
-        // グラフ描画を含む最終画面
         function showFinalScreen(title, message) {
             const display_element = jsPsych.getDisplayElement();
-            
-            // データの抽出
             const results = jsPsych.data.get().filter({trial_type: 'canvas-slider-response'}).values();
             const conditions = [
-                { angle: 15, wing: 20 },
-                { angle: 15, wing: 50 },
-                { angle: 75, wing: 20 },
-                { angle: 75, wing: 50 }
+                { angle: 15, wing: 20 }, { angle: 15, wing: 50 },
+                { angle: 75, wing: 20 }, { angle: 75, wing: 50 }
             ];
             const means = conditions.map(c => {
                 const trials = results.filter(r => r.angle === c.angle && r.wing_length === c.wing);
@@ -321,30 +336,29 @@
             });
             const labels = conditions.map(c => `${c.angle}° / ${c.wing}px`);
 
-            // 【重要：修正箇所】
-            // 背景が二重になるエラーを解消するため、内側に新しい jspsych-content-wrapper を作らず、
-            // display_element 直下に「一つだけ」のラッパー構造が維持されるように書き換えます。
             display_element.innerHTML = `
-                <div class="jspsych-content-wrapper" style="max-width: 800px;">
+                <div class="jspsych-content-wrapper" style="max-width: 800px; margin: auto;">
                     <div class="final-screen-container">
                         <h2 style="margin-bottom: 10px;">${title}</h2>
                         <p>${message}</p>
-                        
                         <div class="chart-container">
                             <canvas id="feedbackChart"></canvas>
                         </div>
-
-                        <div style="text-align: left; font-size: 0.9rem; color: #4a5568; margin-top: 10px; width: 100%;">
-                            <p><strong>解説:</strong> 縦軸は錯覚量（Error Amount）です。正の数値が大きいほど、比較刺激を実際よりも短く感じ、長く調整したことを意味します。</p>
-                            <p>一般に、羽の角度が鋭いほど（15°）、また羽が長いほど（50px）、錯覚量は大きくなることが知られています。</p>
+                        <div style="text-align: left; font-size: 0.85rem; color: #4a5568; margin-top: 10px; width: 100%;">
+                            <p><strong>解説:</strong> 縦軸は錯覚量です。正の数値が大きいほど、比較刺激を短く感じ、長く調整したことを意味します。</p>
                         </div>
-                        
                         <p style="color: #718096; margin-top: 20px;">ブラウザを閉じて終了してください。</p>
                     </div>
                 </div>
             `;
 
-            // Chart.jsによる描画
+            const contentNode = display_element.querySelector('.jspsych-content-wrapper').parentElement;
+            if (contentNode && contentNode.classList.contains('jspsych-content')) {
+                contentNode.style.background = 'transparent';
+                contentNode.style.boxShadow = 'none';
+                contentNode.style.padding = '0';
+            }
+
             const canvasElement = document.getElementById('feedbackChart');
             if (canvasElement) {
                 const ctx = canvasElement.getContext('2d');
@@ -355,12 +369,7 @@
                         datasets: [{
                             label: '平均錯覚量 (px)',
                             data: means,
-                            backgroundColor: [
-                                'rgba(74, 144, 226, 0.7)',
-                                'rgba(74, 144, 226, 0.9)',
-                                'rgba(160, 174, 192, 0.7)',
-                                'rgba(160, 174, 192, 0.9)'
-                            ],
+                            backgroundColor: 'rgba(74, 144, 226, 0.7)',
                             borderColor: '#2d3748',
                             borderWidth: 1
                         }]
@@ -368,17 +377,7 @@
                     options: {
                         responsive: true,
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: { display: true, text: '錯覚量 (px)' }
-                            },
-                            x: {
-                                title: { display: true, text: '条件 (角度 / 羽の長さ)' }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            title: { display: true, text: '条件別平均錯覚量' }
+                            y: { beginAtZero: true }
                         }
                     }
                 });
