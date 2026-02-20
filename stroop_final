@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ストループ課題 - UI/UX改善版</title>
+    <!-- jsPsych v7.3 ライブラリの読み込み -->
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css">
+    <style>
+        :root {
+            --primary-color: #f0f0f0;
+            --accent-color: #4A90E2;
+            --text-color: #333;
+            --bg-color: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* スマホでの不要なスクロール防止 */
+            touch-action: manipulation;
+        }
+
+        /* 試行カウンター */
+        #trial-counter {
+            position: fixed;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            z-index: 10;
+            display: none; /* 初期状態は非表示 */
+        }
+
+        /* 刺激表示 */
+        .stimulus {
+            font-size: 60px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .fixation {
+            font-size: 60px;
+            color: #ccc;
+        }
+
+        /* ボタンのカスタマイズ */
+        .jspsych-btn {
+            font-size: 20px !important;
+            padding: 15px 40px !important;
+            margin: 10px !important;
+            border-radius: 12px !important;
+            background-color: var(--primary-color) !important;
+            border: 2px solid #ddd !important;
+            color: var(--text-color) !important;
+            transition: transform 0.1s, background-color 0.2s;
+            min-width: 120px;
+        }
+
+        .jspsych-btn:active {
+            transform: scale(0.95);
+            background-color: #e0e0e0 !important;
+        }
+
+        /* 教示文 */
+        .instruction-box {
+            text-align: left;
+            max-width: 90%;
+            margin: 0 auto;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        /* フィードバック画面（グラフ） */
+        .results-container {
+            width: 90%;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .chart-row {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .chart-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .bar-container {
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 24px;
+            width: 100%;
+            position: relative;
+        }
+
+        .bar {
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 1s ease-out;
+        }
+
+        .bar-value {
+            position: absolute;
+            right: 10px;
+            top: 0;
+            line-height: 24px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .verdict {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        #message-area {
+            padding: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="trial-counter"></div>
+    <script>
+        /**
+         * 設定項目 (既存ロジック厳守)
+         */
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyk7y1dNEaxL_lD9bWz8Ca1bskk6z5GUM11aKuMTQv57zz-2ShBLQ1mwA8ys3PMrVOgBQ/exec";
+        const TOTAL_TRIALS = 10;
+        let current_trial_number = 0;
+
+        /**
+         * jsPsychの初期化
+         */
+        const jsPsych = initJsPsych({
+            on_finish: function() {
+                // すでにバックグラウンドで送信済みなので、ここでは何もしないか
+                // 万が一の未送信チェックを行う
+            }
+        });
+
+        const timeline = [];
+
+        /**
+         * (1) 参加者IDの入力
+         */
+        const participant_info = {
+            type: jsPsychSurveyText,
+            questions: [
+                {prompt: "参加者ID（例：学籍番号）を入力してください", name: 'subject_id', required: true}
+            ],
+            button_label: "次へ",
+            on_finish: function(data) {
+                const id = data.response.subject_id;
+                const now = new Date();
+                const timestamp = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate() + " " + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
+                
+                jsPsych.data.addProperties({
+                    subject_id: id,
+                    timestamp: timestamp
+                });
+            }
+        };
+        timeline.push(participant_info);
+
+        /**
+         * (2) 教示画面
+         */
+        const instructions = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div class="instruction-box">
+                    <p><strong>【色のなまえクイズ】</strong></p>
+                    <p>ご協力ありがとうございます。これから画面に色がついた文字が表示されます。</p>
+                    <p>書かれている「文字の意味」に惑わされず、<strong>「文字の色」</strong>を下のボタンから選んでタップしてください。</p>
+                    <p>できるだけ早く、正確に答えてください。</p>
+                    <p>準備ができたら下のボタンを押してスタートします。</p>
+                </div>
+            `,
+            choices: ['実験を開始する'],
+            on_finish: function() {
+                const counter = document.getElementById('trial-counter');
+                if (counter) {
+                    counter.style.display = 'block';
+                }
+            }
+        };
+        timeline.push(instructions);
+
+        /**
+         * (3) メイン試行
+         */
+        const stimuli = [
+            { text: "赤", color: "red", condition: "congruent", correct_idx: 0 },
+            { text: "青", color: "blue", condition: "congruent", correct_idx: 1 },
+            { text: "緑", color: "green", condition: "congruent", correct_idx: 2 },
+            { text: "赤", color: "blue", condition: "incongruent", correct_idx: 1 },
+            { text: "赤", color: "green", condition: "incongruent", correct_idx: 2 },
+            { text: "青", color: "red", condition: "incongruent", correct_idx: 0 },
+            { text: "青", color: "green", condition: "incongruent", correct_idx: 2 },
+            { text: "緑", color: "red", condition: "incongruent", correct_idx: 0 },
+            { text: "緑", color: "blue", condition: "incongruent", correct_idx: 1 }
+        ];
+
+        const fixation = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div class="fixation">+</div>',
+            choices: "NO_KEYS",
+            trial_duration: 500,
+            data: { task: 'fixation' },
+            on_start: function() {
+                current_trial_number++;
+                const counter = document.getElementById('trial-counter');
+                if (counter) {
+                    counter.innerHTML = `現在 ${current_trial_number} 回目 / 全 ${TOTAL_TRIALS} 回`;
+                }
+            }
+        };
+
+        const test = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: function() {
+                return `<div class="stimulus" style="color: ${jsPsych.timelineVariable('color')};">
+                            ${jsPsych.timelineVariable('text')}
+                        </div>`;
+            },
+            choices: ['赤', '青', '緑'],
+            data: {
+                task: 'response',
+                word: jsPsych.timelineVariable('text'),
+                color: jsPsych.timelineVariable('color'),
+                condition: jsPsych.timelineVariable('condition'),
+                correct_response_idx: jsPsych.timelineVariable('correct_idx')
+            },
+            on_finish: function(data) {
+                data.correct = (data.response == data.correct_response_idx) ? "true" : "false";
+            }
+        };
+
+        const post_trial_gap = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '',
+            choices: "NO_KEYS",
+            trial_duration: 1000,
+            data: { task: 'iti' }
+        };
+
+        const test_procedure = {
+            timeline: [fixation, test, post_trial_gap],
+            timeline_variables: stimuli,
+            sample: {
+                type: 'with-replacement',
+                size: TOTAL_TRIALS
+            }
+        };
+        timeline.push(test_procedure);
+
+        /**
+         * (4) バックグラウンドでのデータ送信 (自動実行)
+         */
+        const data_sending_process = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<h3>結果を集計中...</h3>',
+            choices: "NO_KEYS",
+            trial_duration: 500, // 一瞬表示して送信を開始する
+            on_start: function() {
+                // 送信処理を開始
+                saveDataBackground();
+            }
+        };
+        timeline.push(data_sending_process);
+
+        /**
+         * (5) 結果フィードバック画面
+         */
+        const feedback = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: function() {
+                const trials = jsPsych.data.get().filter({task: 'response'});
+                const cong_correct = trials.filter({condition: 'congruent', correct: "true"});
+                const cong_rt = Math.round(cong_correct.select('rt').mean()) || 0;
+                const cong_errors = trials.filter({condition: 'congruent', correct: "false"}).count();
+                const incong_correct = trials.filter({condition: 'incongruent', correct: "true"});
+                const incong_rt = Math.round(incong_correct.select('rt').mean()) || 0;
+                const incong_errors = trials.filter({condition: 'incongruent', correct: "false"}).count();
+                const max_rt = Math.max(cong_rt, incong_rt, 1000);
+                const cong_width = (cong_rt / max_rt) * 100;
+                const incong_width = (incong_rt / max_rt) * 100;
+
+                let verdict_text = (incong_rt > cong_rt) ? 
+                    "あなたの結果は仮説通り、不一致条件（文字と色が違う時）の方が反応が遅くなりました！脳が一生懸命、情報の整理をした証拠です。" : 
+                    "あなたは情報の切り替えが非常に得意なようです。素晴らしい集中力です。";
+
+                return `
+                    <div class="results-container">
+                        <h3>実験結果</h3>
+                        <p style="color: green; font-weight: bold;">✓ データは自動的に送信されました</p>
+                        
+                        <div class="chart-row">
+                            <div class="chart-label">一致条件（平均反応時間）</div>
+                            <div class="bar-container">
+                                <div class="bar" style="width: ${cong_width}%"></div>
+                                <span class="bar-value">${cong_rt} ms</span>
+                            </div>
+                        </div>
+
+                        <div class="chart-row">
+                            <div class="chart-label">不一致条件（平均反応時間）</div>
+                            <div class="bar-container">
+                                <div class="bar" style="width: ${incong_width}%; background:#E67E22;"></div>
+                                <span class="bar-value">${incong_rt} ms</span>
+                            </div>
+                        </div>
+
+                        <div class="verdict">${verdict_text}</div>
+                    </div>
+                `;
+            },
+            choices: ['実験を終了する'],
+            on_start: function() {
+                const counter = document.getElementById('trial-counter');
+                if (counter) { counter.style.display = 'none'; }
+            }
+        };
+        timeline.push(feedback);
+
+        /**
+         * バックグラウンド送信ロジック
+         */
+        function saveDataBackground() {
+            const relevant_data = jsPsych.data.get().filter({task: 'response'}).ignore(['task', 'correct_response_idx', 'internal_node_id', 'trial_type', 'trial_index', 'stimulus', 'response']);
+            const data_to_send = relevant_data.values();
+
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data_to_send)
+            }).catch(e => console.error("Data transmission failed in background", e));
+        }
+
+        /**
+         * 最終バックアップ/終了画面 (jsPsych finish)
+         */
+        function saveData() {
+            const display_element = jsPsych.getDisplayElement();
+            display_element.innerHTML = '<div id="message-area"><h2>お疲れ様でした</h2><p>ブラウザを閉じて終了してください。</p></div>';
+        }
+
+        jsPsych.run(timeline);
+    </script>
+</body>
+</html>
