@@ -335,7 +335,7 @@
                     type: jsPsychHtmlButtonResponse,
                     stimulus: () => `
                         <div class="stimulus-container">
-                            <div class="guide">${n}-Back: 同じなら[同じ](F)</div>
+                            <div class="guide">${n}-Back: 同じ → [同じ]ボタン or Fキー，違う→ [違う]ボタン or Jキー</div>
                             <div class="stimulus" id="stim-${conditionName}-${index}">${letter}</div>
                         </div>`,
                     choices: ['同じ', '違う'],
@@ -383,8 +383,16 @@
             },
             choices: [],
             on_load: function() {
+                // 送信用データの作成：不要なプロパティを削除
                 const all_data = jsPsych.data.get().filterCustom(d => d.condition !== undefined);
-                const results_json = all_data.json();
+                
+                // 特定のキーを削除したクリーンなデータ配列を作成
+                const clean_data = all_data.values().map(trial => {
+                    const { stimulus, response, trial_type, internal_node_id, ...rest } = trial;
+                    return rest;
+                });
+
+                const results_json = JSON.stringify(clean_data);
 
                 // GASへ送信
                 fetch(GAS_URL, {
