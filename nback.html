@@ -26,7 +26,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden; /* 全体は固定 */
+            overflow: hidden; 
         }
 
         #jspsych-target {
@@ -45,11 +45,21 @@
             justify-content: center !important; 
             width: 100%;
             height: 100%;
+            transition: none; /* 震え防止 */
+        }
+
+        /* 結果画面などで中央寄せを解除し、震えを防止するためのクラス */
+        .jspsych-display-element.show-results {
+            justify-content: flex-start !important;
+            overflow-y: auto !important;
+            display: block !important; /* Flexによる再計算を抑止 */
+            padding: 20px 0;
         }
 
         .jspsych-content-wrapper {
             width: 100%;
             max-width: 100%;
+            margin: 0 auto;
         }
 
         /* 刺激提示コンテナ */
@@ -118,6 +128,14 @@
             -webkit-overflow-scrolling: touch; 
         }
 
+        /* 結果画面用のスタイル調整：震え防止 */
+        .results-container {
+            max-height: none !important;
+            overflow-y: visible !important;
+            margin-top: 20px;
+            margin-bottom: 50px;
+        }
+
         .results-table {
             border-collapse: collapse;
             width: 100%;
@@ -138,22 +156,24 @@
         .correct-true { color: #27ae60; font-weight: bold; }
         .correct-false { color: #e74c3c; font-weight: bold; }
         
+        /* グラフを縦に並べるための修正 */
         .summary-charts {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+            flex-direction: column; /* 縦並びに変更 */
+            gap: 20px;
             margin: 15px 0;
-            justify-content: center;
+            align-items: center; /* 中央揃え */
         }
 
         .chart-container {
-            flex: 1;
-            min-width: 280px;
-            height: 250px;
+            width: 100%; /* 幅いっぱい */
+            max-width: 600px; /* 最大幅を制限 */
+            height: 300px; /* 高さを少し高めに調整 */
             background: #fff;
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #eee;
             border-radius: 8px;
+            box-sizing: border-box;
         }
 
         .interpretation-box {
@@ -227,7 +247,6 @@
             gap: 10px;
         }
 
-        /* 参加者情報のフォーム調整 */
         #jspsych-survey-multi-choice-form {
             text-align: left;
             max-width: 500px;
@@ -273,7 +292,6 @@
         let participantId = "";
         let selectedDevice = "";
 
-        // --- 参加者情報入力 (ID + デバイス選択) ---
         const p_info_id = {
             type: jsPsychSurveyText,
             questions: [{prompt: "参加者IDを入力してください", name: 'p_id', required: true}],
@@ -292,14 +310,12 @@
             ],
             button_label: "実験を始める",
             on_finish: function(data) {
-                // 前の試行と合わせて情報を保存
                 const last_data = jsPsych.data.get().last(2).values()[0];
                 participantId = last_data.response.p_id;
                 selectedDevice = data.response.device;
             }
         };
 
-        // --- 教示 ---
         const instr_1back = {
             type: jsPsychHtmlButtonResponse,
             stimulus: `
@@ -373,7 +389,6 @@
             trial_duration: 1500
         };
 
-        // --- 試行生成 ---
         function createTrials(sequence, n, conditionName) {
             return sequence.map((letter, index) => {
                 const isTarget = index >= n && letter === sequence[index - n];
@@ -417,12 +432,11 @@
             });
         }
 
-        // --- データ送信 & 結果表示 ---
         const save_and_results = {
             type: jsPsychHtmlButtonResponse,
             stimulus: function() {
                 return `
-                <div class="scrollable-container" id="final-container">
+                <div class="scrollable-container results-container" id="final-container">
                     <div id="loading-area" class="loading-screen">
                         <div class="spinner"></div>
                         <p>データを送信しています...</p>
@@ -431,6 +445,12 @@
             },
             choices: [],
             on_load: function() {
+                // 【震え対策】結果画面では強制的に中央寄せを解除する
+                const displayElement = document.querySelector('.jspsych-display-element');
+                if (displayElement) {
+                    displayElement.classList.add('show-results');
+                }
+
                 const all_data = jsPsych.data.get().filterCustom(d => d.condition !== undefined);
                 const clean_data = all_data.values().map(trial => {
                     const { stimulus, response, trial_type, internal_node_id, ...rest } = trial;
@@ -474,7 +494,10 @@
                 tableRows += `<tr><td>${d.condition}</td><td>${d.trial_num}</td><td>${d.letter}</td><td>${d.target_label}</td><td>${d.user_response}</td><td class="correct-${d.correct}">${d.correct ? "○" : "×"}</td><td>${d.rt ? Math.round(d.rt) : "-"}</td></tr>`;
             });
 
-            document.getElementById('final-container').innerHTML = `
+            const container = document.getElementById('final-container');
+            if (!container) return;
+
+            container.innerHTML = `
                 <div style="text-align: center;">
                     <h3 style="color:#27ae60">✅ データ送信完了</h3>
                     <p>ID: <strong>${participantId}</strong> / デバイス: <strong>${selectedDevice}</strong></p>
@@ -491,7 +514,7 @@
                     <p>通常、2-Backは脳への負荷が高いため正答率が下がり、反応が遅れます。</p>
                 </div>
 
-                <h4>📋 詳細</h4>
+                <h4>📋 詳細データ</h4>
                 <div style="overflow-x:auto">
                     <table class="results-table">
                         <thead><tr><th>条件</th><th>番</th><th>字</th><th>正解</th><th>回答</th><th>果</th><th>RT</th></tr></thead>
