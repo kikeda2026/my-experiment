@@ -17,6 +17,7 @@
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             --transition: all 0.3s ease;
             --secondary-text: #546e7a;
+            --prereg-color: #5c6bc0;  /* プレレジ用の信頼感のあるブルー */
         }
 
         * {
@@ -121,23 +122,61 @@
             color: var(--secondary-text);
         }
 
+        /* Button container for cards */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
         .btn {
             display: inline-block;
             text-decoration: none;
-            background-color: var(--accent-color);
-            color: white;
             padding: 0.8rem 1.5rem;
             border-radius: 50px;
             text-align: center;
             font-weight: 700;
             transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        /* Main Experiment Button */
+        .btn-main {
+            background-color: var(--accent-color);
+            color: white;
             box-shadow: 0 4px 6px rgba(77, 182, 172, 0.3);
         }
 
-        .btn:hover {
+        .btn-main:hover {
             background-color: #26a69a;
             box-shadow: 0 6px 12px rgba(77, 182, 172, 0.4);
             transform: scale(1.02);
+        }
+
+        /* Preregistration Button (Outline style) */
+        .btn-outline {
+            background-color: transparent;
+            color: var(--prereg-color);
+            border: 2px solid var(--prereg-color);
+            padding: 0.6rem 1.5rem;
+        }
+
+        .btn-outline:hover {
+            background-color: var(--prereg-color);
+            color: white;
+        }
+
+        /* History Link (Subtle style) */
+        .btn-subtle {
+            color: var(--secondary-text);
+            font-size: 0.8rem;
+            font-weight: 400;
+            text-decoration: underline;
+            text-align: center;
+        }
+
+        .btn-subtle:hover {
+            color: var(--text-color);
         }
 
         /* Terms of Use Section */
@@ -245,19 +284,28 @@
                     <h2>実験0：はじめてのWebページ</h2>
                     <p>私が生成AIを使って作成した記念すべき最初の実験プログラムです。</p>
                 </div>
-                <a href="hello_world.html" class="btn">Hello Worldを見る</a>
+                <div class="btn-group">
+                    <a href="hello_world.html" class="btn btn-main">Hello Worldを見る</a>
+                </div>
             </article>
 
-            <!-- 実験1 -->
+            <!-- 実験1：ストループ課題（本番用） -->
             <article class="card">
                 <div>
                     <div class="icon-box">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.607-.48 2.301-1.301 1.091-1.287 2.13-1.332 3.003-1.199.879.133 1.581.05 2.112-.273C20.25 18.72 22 16.47 22 14c0-6.627-4.477-12-10-12z"/></svg>
                     </div>
                     <h2>実験1：ストループ課題</h2>
-                    <p>「文字の意味」と「文字の色」の干渉を調べるテストです。スマホ・PCどちらからでも回答いただけます。（所要時間：約3分）</p>
+                    <p>「文字の意味」と「文字の色」の干渉を調べるテストです。透明性を高めるため、計画書（プレレジ）を公開しています。（所要時間：約3分）</p>
                 </div>
-                <a href="stroop_final.html" class="btn">実験1に参加する</a>
+                <div class="btn-group">
+                    <!-- メインアクション：実験参加 -->
+                    <a href="stroop_final.html" class="btn btn-main">実験に参加する</a>
+                    
+                    <!-- プレレジ関連 -->
+                    <a href="https://github.com/kikeda2026/my-experiment/blob/main/preregistration.md" target="_blank" class="btn btn-outline">プレレジを確認する</a>
+                    <a href="https://github.com/kikeda2026/my-experiment/commits/main/preregistration.md" target="_blank" class="btn-subtle">変更履歴（証拠）を確認する</a>
+                </div>
             </article>
 
             <!-- 実験2 -->
@@ -269,7 +317,9 @@
                     <h2>実験2：ミュラー・リヤー錯視</h2>
                     <p>図形の長さが違って見える錯覚を測る、スライダーを使った視覚のテストです。（所要時間：約2分）</p>
                 </div>
-                <a href="muller_lyer_final.html" class="btn">実験2に参加する</a>
+                <div class="btn-group">
+                    <a href="muller_lyer_final.html" class="btn btn-main">実験2に参加する</a>
+                </div>
             </article>
 
             <!-- 実験3 -->
@@ -277,7 +327,6 @@
                 <div>
                     <div class="icon-box">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <!-- 記憶/チップをイメージしたアイコン -->
                             <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" />
                             <path d="M7 8h10" stroke="currentColor" stroke-dasharray="2 1" />
                             <path d="M7 12h10" stroke="currentColor" />
@@ -286,9 +335,11 @@
                         </svg>
                     </div>
                     <h2>実験3：n-back課題</h2>
-                    <p>ワーキングメモリ（作業記憶）を測定するための課題です。指定された数だけ前の刺激を覚えておく脳トレのようなテストです。（所要時間：約3分）</p>
+                    <p>ワーキングメモリ（作業記憶）を測定するための課題です。指定された数だけ前の刺激を覚えておくテストです。（所要時間：約3分）</p>
                 </div>
-                <a href="https://kikeda2026.github.io/my-experiment/nback.html" class="btn">実験3に参加する</a>
+                <div class="btn-group">
+                    <a href="https://kikeda2026.github.io/my-experiment/nback.html" class="btn btn-main">実験3に参加する</a>
+                </div>
             </article>
         </div>
 
